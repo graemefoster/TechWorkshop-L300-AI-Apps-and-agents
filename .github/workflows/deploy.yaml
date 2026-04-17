@@ -65,6 +65,7 @@ jobs:
             --image "${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${IMAGE_TAG}" \
             --set-env-vars \
               FOUNDRY_ENDPOINT="${{ secrets.FOUNDRY_ENDPOINT }}" \
+              COSMOS_ENDPOINT="${{ secrets.COSMOS_ENDPOINT }}" \
               gpt_endpoint="${{ secrets.gpt_endpoint }}" \
               embedding_endpoint="${{ secrets.embedding_endpoint }}" \
               phi_4_endpoint="${{ secrets.phi_4_endpoint }}"
