@@ -1,0 +1,60 @@
+name: Build and deploy to Azure Container Apps
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build_push_deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      IMAGE_TAG: ${{ github.sha }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install Container Apps extension
+        run: |
+          az extension add --name containerapp --upgrade
+
+      - name: ACR login
+        run: |
+          az acr login --name "${{ secrets.ACR_NAME }}"
+
+      - name: "Build Docker image (context: src/)"
+        run: |
+          docker build \
+            -f src/Dockerfile \
+            -t "${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${IMAGE_TAG}" \
+            src
+
+      - name: Push Docker image
+        run: |
+          docker push "${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${IMAGE_TAG}"
+
+      - name: Update Container App to new image + set env vars
+        run: |
+          az containerapp update \
+            --name "${{ secrets.CONTAINERAPP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --image "${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${IMAGE_TAG}" \
+            --set-env-vars \
+              FOUNDRY_ENDPOINT="${{ secrets.FOUNDRY_ENDPOINT }}" \
+              gpt_endpoint="${{ secrets.gpt_endpoint }}" \
+              embedding_endpoint="${{ secrets.embedding_endpoint }}" \
+              phi_4_endpoint="${{ secrets.phi_4_endpoint }}"
+
