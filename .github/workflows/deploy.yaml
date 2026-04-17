@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
   id-token: write
-  
+
 
 jobs:
   build_push_deploy:
@@ -20,6 +20,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Verify secrets are set
+        run: |
+          echo "AZURE_CLIENT_ID length: ${#CLIENT_ID}"
+          echo "AZURE_TENANT_ID length: ${#TENANT_ID}"
+          echo "AZURE_SUBSCRIPTION_ID length: ${#SUBSCRIPTION_ID}"
+        env:
+          CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
